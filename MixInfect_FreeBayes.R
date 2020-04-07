@@ -6,26 +6,11 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   
   options(stringsAsFactors = F)
   #### Load required packages
-  if (!require(stringr)){
-    install.packages("stringr")
-    library(stringr)
-  }
-  if (!require(seqinr)){
-    install.packages("seqinr")
-    library(seqinr)
-  }
-  if (!require(Rsamtools)){
-    source("http://bioconductor.org/biocLite.R")
-    biocLite("Rsamtools")
-    a
-    y
-    library("Rsamtools")
-  }
-  if (!require(mclust)){
-    install.packages("mclust")
-    library("mclust", lib.loc="/Library/Frameworks/R.framework/Versions/3.4/Resources/library")
-  }
-  
+  stopifnot(require(mclust),
+            require(stringr),
+            require(seqinr),
+            require(Rsamtools),
+            require(mclust))
   ############################ DATA INPUTS AND QC ######################################
   
   #### Read in vcf file and isolate header
@@ -35,7 +20,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   names<-unlist(strsplit(header_input[end_head],"\t"))
   format<-which(names=='FORMAT')
   names<-names[10:length(names)]
-  rm(header_input,end_head)
+  # rm(header_input,end_head)
   
   #### Determine fields of GT and DP (or DP4)
   s<-unlist(str_split(input[1,format], ":"))
@@ -45,7 +30,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   } else {
     DP<-which(s=='DP')
   }
-  rm(format,s)
+  # rm(format,s)
   
   #### Make new matrices of separared GT:PL:DP:GQ
   if (ncol(input)>10){
@@ -66,7 +51,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
     }
   }
   sep_geno<-cbind(input[,1:9],GT1) 
-  rm(geno,i,j,k,l,s,input,GT1)
+  # rm(geno,i,j,k,l,s,input,GT1)
   
   ##### Remove low qual, >biallelic SNPs and all Indels
   
@@ -76,20 +61,20 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   b<-qual < lowqual
   c<-which(b == 'FALSE')
   sep_geno<-sep_geno[c,]
-  rm(b,c,qual,lowqual)
+  # rm(b,c,qual,lowqual)
   
   #### Remove Indels
-  desc<-sep_geno[,8]
-  new_desc<-grepl('snp',desc)
-  f<-which(new_desc==T)
-  sep_geno<-sep_geno[f,]
-  rm(desc,f,new_desc)
+  # desc<-sep_geno[,8]
+  # new_desc<-grepl('snp',desc)
+  # f<-which(new_desc==T)
+  # sep_geno<-sep_geno[f,]
+  # rm(desc,f,new_desc)
   
   #### Remove > biallelic SNPs
   alt<-sep_geno[,5]
   a<-which(grepl(",",alt)==FALSE)
   sep_geno<-sep_geno[a,]
-  rm(a,alt)
+  # rm(a,alt)
   
   #### Mark low coverage (less than 10) as '?'
   chromosome<-as.character(sep_geno[,1])
@@ -103,7 +88,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   lowread<-which(snprd == 'TRUE') 
   geno[lowread]<-'?'
   genotype<-as.matrix(cbind(chromosome,position,ref,alt,geno))
-  rm(read,snprd,lowread,sep_geno,alt,position,ref,GT,DP,no_of_columns)
+  # rm(read,snprd,lowread,sep_geno,alt,position,ref,GT,DP,no_of_columns)
   row.names(geno)<-NULL
   row.names(genotype)<-NULL
   
@@ -119,14 +104,12 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
       geno<-as.data.frame(geno[-b,])
       genotype<-genotype[-b,]
     }
-    rm(b,exclude,excluded_sites,i)
+    # rm(b,exclude,excluded_sites,i)
   }
-  
   
   ######################### ESTIMATION OF MIXED SAMPLES ############################
   
   ### Create output file
-  
   outputfile<-as.data.frame(matrix(NA,nrow=length(names),ncol=11))
   colnames(outputfile)<-c("Sample name","Mix or Non-mix","Mixed SNPs","Total SNPs","Proportion het/total SNPs","Number of strains in mix","Major strain proportion","SD Major strain proportion","SEM Major strain proportion","CI low Major strain proportion","CI high Major strain proportion")
   outputfile[,1]<-names
@@ -177,7 +160,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   hetero_present<-which(g=='FALSE')
   genotype<-mixgenotype[hetero_present,]
   colnames(genotype)<-c("chromosome","position","ref","alt",mixnames)
-  rm(g,geno,new22,d,hetero_present,i,j,mixgeno,mixgenotype,mixes,names)
+  # rm(g,geno,new22,d,hetero_present,i,j,mixgeno,mixgenotype,mixes,names)
   
   
   ##### Make matrix with proportion of ref to alt (0 is ref, 1 alt)
@@ -206,7 +189,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   
   output_prop[,1:4]<-genotype[,1:4]
   colnames(output_prop)<-c("Chromosome","Position","Ref","Alt",mixnames)
-  rm(i,j)
+  # rm(i,j)
   row.names(output_prop)<-NULL
   
   #### Replace all '-' with proportion based on BAM files
@@ -215,137 +198,68 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   bamnames<-as.character(colnames(output_prop))
   poorqual<-c('!','“','#','$','%','&','‘','(',')','*','+',',','–','.')
   
-  #loop across all samples
-  for (i in 5:ncol(output_prop)){
-    bamname<-bamnames[i]
-    a<-which(output_prop[,i]=='-')
-    
-    #loop across all heteroSNPs
-    for (j in 1:length(a)){
-      which<-GRanges(seqnames=output_prop[1,1],IRanges(as.numeric(output_prop[a[j],2]),as.numeric(output_prop[a[j],2])))
-      param<-ScanBamParam(what=what,which=which)
-      reads<-scanBam(paste0(bamname,".bam"),param = param)
-      SNP<-as.numeric(output_prop[a[j],2])
+  # loop across all samples
+  # originally code converted to parallel version using furrr
+  output_prop_tmp <- 
+    furrr::future_map_dfc(5:ncol(output_prop), function(i) {
+      x <- as.numeric(output_prop[, i])
       
-      sequence<-reads[[1]]$seq
-      position<-reads[[1]]$pos
-      quality<-reads[[1]]$qual
+      bamname<-bamnames[i]
+      a<-which(output_prop[,i]=='-')
       
-      bases<-NULL
-      
-      # loop across all reads
-      for (m in (1:length(position))){
-        z<-unlist(sequence[m])
-        qual<-unlist(quality[m])
-        if (is.na(position[m])!=TRUE){
-          if (((SNP+1)-(position[m])<=length(z))==TRUE){
-            if (is.element(as.character(qual[(SNP+1)-(position[m])]), poorqual)==FALSE){
-              pos<-as.character(z[(SNP+1)-(position[m])])
-              if (pos==output_prop[a[j],3]){
-                base<-0
-              } else if (pos==output_prop[a[j],4]){
-                base<-1
-              } else {
-                base<-'N'
-              }
-              if ((base==0 | base==1)==TRUE){
-                bases<-c(bases,base)
+      x[a] <- map_dbl(seq_along(a), function(j) {
+        
+        which<-GRanges(seqnames=output_prop[1,1],IRanges(as.numeric(output_prop[a[j],2]),as.numeric(output_prop[a[j],2])))
+        param<-ScanBamParam(what=what,which=which)
+        reads<-scanBam(paste0(bamname,".bam"),param = param)
+        SNP<-as.numeric(output_prop[a[j],2])
+        
+        sequence<-reads[[1]]$seq
+        position<-reads[[1]]$pos
+        quality<-reads[[1]]$qual
+        
+        bases<-NULL
+        
+        # loop across all reads
+        for (m in (1:length(position))){
+          z<-unlist(sequence[m])
+          qual<-unlist(quality[m])
+          if (is.na(position[m])!=TRUE){
+            if (((SNP+1)-(position[m])<=length(z))==TRUE){
+              if (is.element(as.character(qual[(SNP+1)-(position[m])]), poorqual)==FALSE){
+                pos<-as.character(z[(SNP+1)-(position[m])])
+                if (pos==output_prop[a[j],3]){
+                  base<-0
+                } else if (pos==output_prop[a[j],4]){
+                  base<-1
+                } else {
+                  base<-'N'
+                }
+                if ((base==0 | base==1)==TRUE){
+                  bases<-c(bases,base)
+                }
               }
             }
           }
         }
-      }
-      output_prop[a[j],i]<-length(which(bases==1))/length(bases)
-    }
-  }
-  rm(a,bamname,base,bases,i,j,m,param,pos,position,reads,sequence,SNP,which,z,qual,quality,poorqual,what)
+        length(which(bases==1))/length(bases)
+      })
+      return(x)
+    })
+  # rm(a,bamname,base,bases,i,j,m,param,pos,position,reads,sequence,SNP,which,z,qual,quality,poorqual,what)
+  output_prop_tmp <- dplyr::mutate_all(output_prop_tmp, as.numeric)
+  colnames(output_prop_tmp) <- mixnames
   
+  output_prop <- cbind.data.frame(genotype[, 1:4], output_prop_tmp)
   
   #### Proportions of hetero SNP calls
   proportions_alt<-as.data.frame(output_prop[,5:ncol(output_prop)])
   proportions_alt_pos<-output_prop
   
-  ########## Do ref allele proportion
-  
-  output_prop_ref=matrix(0,nrow(genotype),ncol(genotype))
-  rownames(output_prop_ref)=rownames(genotype)
-  colnames(output_prop_ref)=colnames(genotype)
-  
-  for (i in 1:nrow(genotype)){
-    for (j in 5:ncol(genotype)){
-      if (genotype[i,j]=='0/0'){
-        output_prop_ref[i,j]=1}
-      else  {if (genotype[i,j]=='1/1'){
-        output_prop_ref[i,j]=0
-      }
-        else  {if (genotype[i,j]=='0/1'){
-          output_prop_ref[i,j]='-'
-        }
-          else {
-            output_prop_ref[i,j]='?'}
-        }
-      }
-    }
-  }
-  
-  output_prop_ref[,1:4]<-genotype[,1:4]
-  colnames(output_prop_ref)<-c("Chromosome","Position","Ref","Alt",mixnames)
-  rm(i,j)
-  row.names(output_prop_ref)<-NULL
-  
-  #### Replace all '-' with proportion based on BAM files
-  
-  what<-c("pos", "seq","qual")
-  bamnames<-as.character(colnames(output_prop_ref))
-  poorqual<-c('!','“','#','$','%','&','‘','(',')','*','+',',','–','.')
-  
-  #loop across all samples
-  for (i in 5:ncol(output_prop_ref)){
-    bamname<-bamnames[i]
-    a<-which(output_prop_ref[,i]=='-')
-    
-    #loop across all heteroSNPs
-    for (j in 1:length(a)){
-      which<-GRanges(seqnames=output_prop[1,1],IRanges(as.numeric(output_prop[a[j],2]),as.numeric(output_prop[a[j],2])))
-      param<-ScanBamParam(what=what,which=which)
-      reads<-scanBam(paste0(bamname,".bam"),param = param)
-      SNP<-as.numeric(output_prop_ref[a[j],2])
-      
-      sequence<-reads[[1]]$seq
-      position<-reads[[1]]$pos
-      quality<-reads[[1]]$qual
-      
-      bases<-NULL
-      
-      # loop across all reads
-      for (m in (1:length(position))){
-        z<-unlist(sequence[m])
-        qual<-unlist(quality[m])
-        if (is.na(position[m])!=TRUE){
-          if (((SNP+1)-(position[m])<=length(z))==TRUE){
-            if (is.element(as.character(qual[(SNP+1)-(position[m])]), poorqual)==FALSE){
-              pos<-as.character(z[(SNP+1)-(position[m])])
-              if (pos==output_prop_ref[a[j],3]){
-                base<-1
-              } else if (pos==output_prop_ref[a[j],4]){
-                base<-0
-              } else {
-                base<-'N'
-              }
-              if ((base==0 | base==1)==TRUE){
-                bases<-c(bases,base)
-              }
-            }
-          }
-        }
-      }
-      output_prop_ref[a[j],i]<-length(which(bases==1))/length(bases)
-    }
-  }
-  rm(a,bamname,base,bases,i,j,m,param,pos,position,reads,sequence,SNP,which,z,qual,quality,poorqual,what)
-  
-  proportions_ref<-as.data.frame(output_prop_ref[,5:ncol(output_prop_ref)])
-  proportions_ref_pos<-output_prop_ref
+  proportions_ref <- proportions_alt
+  proportions_ref <- dplyr::mutate_all(proportions_ref,  ~ 1 - .)
+  proportions_ref_pos <- proportions_alt_pos
+  proportions_ref_pos[, 5:ncol(proportions_ref_pos)] <- proportions_ref
   
   write.csv(proportions_alt,file=paste(output,"_proportions_alt.csv",sep = ""),row.names = FALSE)
   write.csv(proportions_ref,file=paste(output,"_proportions_ref.csv",sep = ""),row.names = FALSE)
@@ -576,7 +490,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   
   for (i in 1:nrow(proportion_alt_high)){
     for (j in 1:ncol(proportion_alt_high)){
-      if (proportion_alt_high[i,j] < 0.5){
+      if (!is.na(proportion_alt_high[i,j]) && proportion_alt_high[i,j] < 0.5){
         proportion_alt_high[i,j]<-1-as.numeric(proportion_alt_high[i,j])
       }
     }
@@ -584,14 +498,11 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   
   for (i in 1:nrow(proportion_ref_low)){
     for (j in 1:ncol(proportion_ref_low)){
-      if (proportion_ref_low[i,j] >= 0.5){
+      if (!is.na(proportion_ref_low[i,j]) && proportion_ref_low[i,j] >= 0.5){
         proportion_ref_low[i,j]<-1-as.numeric(proportion_alt_high[i,j])
       }
     }
   }
-  
-  
-  
   
   proportions_alt_het_combined<-proportion_alt_high
   proportions_ref_het_combined<-proportion_ref_low
