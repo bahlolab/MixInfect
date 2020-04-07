@@ -7,15 +7,11 @@
 
 MixInfectVCF = function(vcfInput,outputfile,LowCov=10){
   
-  if (!require(mclust)){
-    install.packages("mclust")
-    library("mclust")
-  }
-    if (!require(stringr)){
-    install.packages("stringr")
-    library("stringr")
-  }
+  options(stringsAsFactors = F)
   
+  stopifnot(require(mclust),
+            require(stringr))
+
   vcf<-read.table(vcfInput)
   header_input<-as.matrix(read.table(vcfInput,comment.char=" ",sep="\n"))
   end_head<-which(grepl("#CHROM",header_input)==TRUE)
@@ -106,7 +102,7 @@ MixInfectVCF = function(vcfInput,outputfile,LowCov=10){
     for (i in 1:nrow(output_prop)){
       for (j in 2:ncol(output_prop)){
         if (mix_GT[i,j]=="0/1"){
-          props<-as.numeric(unlist(strsplit(mix_AD[i,j],split = ",")))
+          props<-as.numeric(setdiff(unlist(strsplit(mix_AD[i,j],split = ",")), '.'))
           if (length(props)==2 && sum(props)>=LowCov){
             output_prop[i,j]<-props[2]/sum(props)
           } else if (length(props)>2 &&sum(max(props),max(props[props!=max(props)]))>=LowCov){
