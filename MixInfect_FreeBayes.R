@@ -2,15 +2,15 @@
 ################ ESTIMATION OF MIXTURES AND MIXTURE PROPORTIONS FROM VARIANT CALLING #######################
 ############################################################################################################
 
-MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,output,Qual=20,LowCov=10,BICoutput=TRUE){
+MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,output,Qual=20,LowCov=10,BICoutput=TRUE,
+                    annot_file = "H37Rv_annotation_per_base.csv.gz"){
   
   options(stringsAsFactors = F)
   #### Load required packages
   stopifnot(require(mclust),
             require(stringr),
             require(seqinr),
-            require(Rsamtools),
-            require(mclust))
+            require(Rsamtools))
   ############################ DATA INPUTS AND QC ######################################
   
   #### Read in vcf file and isolate header
@@ -426,7 +426,7 @@ MixInfect<-function(InputVCF,ExcludedRegions.present=FALSE,ExcludedRegions,outpu
   
   ### Number of genes containing het SNPs
   
-  gene_coordinates<-read.csv(file="H37Rv_annotation_per_base.csv.gz",header=T)
+  gene_coordinates<-read.csv(file=annot_file, header=T)
   SNPs_genes<-as.data.frame(matrix(NA,nrow=nrow(proportions_alt_pos),ncol=3))
   colnames(SNPs_genes)<-c("SNP_coordinate","Gene","Overlap_gene")
   SNPs_genes[,1]<-proportions_alt_pos[,2]
